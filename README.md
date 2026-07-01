@@ -1,7 +1,3 @@
-# EcoFriend
-smart waste segregation system that classifies household waste into six categories using a custom-built Convolutional Neural Network. The application provides real-time predictions, recycling guidance, and a model analytics page comparing the performance of the original and quantized models
-
-
 # ♻️ EcoFriend
 
 EcoFriend is an AI-powered smart waste segregation system that classifies household waste into six categories using a custom Convolutional Neural Network (CNN). Users can upload an image of waste to receive an instant prediction, confidence score, and appropriate recycling or disposal guidance. The project also compares the performance of the original and TensorFlow Lite quantized models to demonstrate efficient edge deployment.
