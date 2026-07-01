@@ -2,71 +2,60 @@
 smart waste segregation system that classifies household waste into six categories using a custom-built Convolutional Neural Network. The application provides real-time predictions, recycling guidance, and a model analytics page comparing the performance of the original and quantized models
 
 
-# ♻️ EcoFriend CNN – Smart Waste Segregator
+# ♻️ EcoFriend
 
-EcoFriend CNN is an AI-powered waste classification system that uses a custom Convolutional Neural Network (CNN) to classify household waste into six categories: Cardboard, Glass, Metal, Paper, Plastic, and Trash. The application provides real-time predictions, disposal guidance, and compares the performance of the original and quantized models.
+EcoFriend is an AI-powered smart waste segregation system that classifies household waste into six categories using a custom Convolutional Neural Network (CNN). Users can upload an image of waste to receive an instant prediction, confidence score, and appropriate recycling or disposal guidance. The project also compares the performance of the original and TensorFlow Lite quantized models to demonstrate efficient edge deployment.
 
 ---
 
 ## Features
 
-- Image-based waste classification
-- Custom CNN built from scratch using TensorFlow/Keras
-- Post-Training Quantization (PTQ) using TensorFlow Lite
-- Flask backend for inference
-- Streamlit frontend for an intuitive user interface
-- Model performance comparison (Accuracy, Latency, Model Size)
-- Recycling and disposal recommendations
+- 🧠 Custom CNN trained from scratch using TensorFlow/Keras
+- 📷 Real-time image-based waste classification
+- ♻️ Disposal and recycling recommendations
+- ⚡ TensorFlow Lite (TFLite) quantized model for optimized inference
+- 📊 Model analytics comparing the original and quantized models
+- 🌐 Flask backend with a Streamlit frontend
 
 ---
 
-## Dataset
+## Waste Categories
 
-- **Dataset:** TrashNet (Kaggle/GitHub)
-- **Classes:**
-  - Cardboard
-  - Glass
-  - Metal
-  - Paper
-  - Plastic
-  - Trash
+The model classifies waste into the following categories:
 
----
-
-## Model
-
-- Custom CNN Architecture
-- Image Size: **128 × 128**
-- Optimizer: **Adam**
-- Loss Function: **Categorical Crossentropy**
-- Data Augmentation
-- Class Weight Balancing
-- Early Stopping
-- Learning Rate Scheduling
+- 📦 Cardboard
+- 🥤 Glass
+- 🥫 Metal
+- 📄 Paper
+- 🧴 Plastic
+- 🗑️ Trash
 
 ---
 
 ## Tech Stack
 
-- Python
-- TensorFlow / Keras
-- TensorFlow Lite
-- Flask
-- Streamlit
-- NumPy
-- Scikit-learn
-- Matplotlib
+| Category | Technologies |
+|----------|--------------|
+| Language | Python |
+| Deep Learning | TensorFlow, Keras |
+| Model Optimization | TensorFlow Lite |
+| Backend | Flask |
+| Frontend | Streamlit |
+| Data Processing | NumPy, Pillow |
+| Visualization | Matplotlib, Plotly |
+| Evaluation | Scikit-learn |
 
 ---
 
 ## Project Structure
 
 ```text
-EcoFriend-CNN/
+EcoFriend/
 │
-├── app.py
-├── streamlit_app.py
+├── app.py                      # Flask backend
+├── streamlit_app.py            # Streamlit frontend
 ├── requirements.txt
+├── README.md
 │
 ├── models/
 │   ├── best_scratch_model.keras
@@ -76,60 +65,82 @@ EcoFriend-CNN/
 │   ├── metrics.json
 │   └── evaluation_dashboard.png
 │
-└── README.md
+└── uploads/
 ```
 
 ---
 
 ## Installation
 
+Clone the repository:
+
 ```bash
-git clone <repository-url>
+git clone https://github.com/<your-username>/EcoFriend.git
+cd EcoFriend
+```
 
-cd EcoFriend-CNN
+Install the required dependencies:
 
+```bash
 pip install -r requirements.txt
 ```
 
 ---
 
-## Run the Application
+## Running the Application
 
-### Start the Flask Backend
+Start the Flask backend:
 
 ```bash
 python app.py
 ```
 
-### Start the Streamlit Frontend
+In a new terminal, launch the Streamlit frontend:
 
 ```bash
 streamlit run streamlit_app.py
 ```
 
+The application will open in your default web browser.
+
 ---
 
-## Model Performance
+## Model
 
-| Metric | Raw Model | Quantized Model |
-|---------|-----------|-----------------|
-| Accuracy | XX.XX% | XX.XX% |
-| Model Size | XX MB | XX MB |
-| Latency | XX ms | XX ms |
+- **Architecture:** Custom Convolutional Neural Network (CNN)
+- **Input Size:** 128 × 128 RGB Images
+- **Optimizer:** Adam
+- **Loss Function:** Categorical Crossentropy
+- **Training Techniques:**
+  - Data Augmentation
+  - Class Weight Balancing
+  - Early Stopping
+  - Learning Rate Scheduling
 
-> Replace the values with the ones from `metrics.json`.
+---
+
+## Performance
+
+The repository includes both the original TensorFlow model and a TensorFlow Lite quantized model. Performance metrics such as accuracy, model size, and inference latency are available in `metrics.json` and are displayed within the application's analytics page.
 
 ---
 
 ## Future Improvements
 
-- Webcam support
-- Cloud deployment (Render/Hugging Face Spaces)
-- Additional waste categories
-- Mobile-friendly interface
+- 📸 Webcam-based real-time waste detection
+- ☁️ Cloud deployment (Render/Hugging Face Spaces)
+- 📱 Mobile-friendly interface
+- ♻️ Support for additional waste categories
+- 📍 Nearby recycling center recommendations
 
 ---
 
 ## Author
 
 **Shourya Salunke**
+
+---
+
+## License
+
+This project is intended for educational purposes
