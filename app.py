@@ -1,87 +1,105 @@
-import streamlit as st
+import json
 import numpy as np
-from PIL import Image
+import streamlit as st
 import tensorflow as tf
+from PIL import Image
 
 # ── Config ──
-MODEL_PATH = "models/quantized_model.tflite"
 IMG_SIZE = 128
 CLASSES = ['cardboard', 'glass', 'metal', 'paper', 'plastic', 'trash']
 
-# Emoji for a bit of visual flair per class
-CLASS_EMOJI = {
-    'cardboard': '📦',
-    'glass': '🍾',
-    'metal': '🥫',
-    'paper': '📄',
-    'plastic': '🧴',
-    'trash': '🗑️'
+DISPOSAL_GUIDANCE = {
+    'cardboard': "♻️ Recyclable. Flatten boxes and keep dry before placing in the recycling bin.",
+    'glass':     "♻️ Recyclable. Rinse out any residue. Check local rules for color-sorted glass.",
+    'metal':     "♻️ Recyclable. Rinse cans/tins. Aluminum and steel are both widely accepted.",
+    'paper':     "♻️ Recyclable. Keep clean and dry — greasy or food-stained paper should go to trash.",
+    'plastic':   "♻️ Recyclable (check resin code). Rinse containers and remove caps if required locally.",
+    'trash':     "🚮 Not recyclable. Dispose of in general waste.",
 }
 
-# ── Load model (cached so it only loads once per session) ──
+QUANT_MODEL_PATH = "quantized_model.tflite"
+METRICS_PATH = "metrics.json"
+DASHBOARD_IMAGE_PATH = "full_dashboard.png"
+
+st.set_page_config(page_title="EcoFriend", page_icon="♻️", layout="centered")
+
+
 @st.cache_resource
-def load_interpreter():
-    interpreter = tf.lite.Interpreter(model_path=MODEL_PATH)
+def load_tflite_interpreter():
+    interpreter = tf.lite.Interpreter(model_path=QUANT_MODEL_PATH)
     interpreter.allocate_tensors()
     return interpreter
 
-interpreter = load_interpreter()
-input_details = interpreter.get_input_details()
-output_details = interpreter.get_output_details()
 
-# ── Preprocessing (must match training exactly) ──
-def preprocess_image(image: Image.Image):
-    image = image.convert("RGB")
-    image = image.resize((IMG_SIZE, IMG_SIZE))
-    img_array = np.array(image, dtype=np.float32)
-    # NOTE: no manual /255 here — the model's own Rescaling(1./255) layer
-    # was baked in during training, so the interpreter expects raw 0-255 floats.
-    img_array = np.expand_dims(img_array, axis=0)
-    return img_array
+@st.cache_data
+def load_metrics():
+    try:
+        with open(METRICS_PATH, "r") as f:
+            return json.load(f)
+    except FileNotFoundError:
+        return None
 
-# ── Run inference ──
-def predict(image: Image.Image):
-    img_array = preprocess_image(image)
-    interpreter.set_tensor(input_details[0]['index'], img_array)
+
+def preprocess_image(image: Image.Image) -> np.ndarray:
+    image = image.convert("RGB").resize((IMG_SIZE, IMG_SIZE))
+    arr = np.array(image, dtype=np.float32)
+    return np.expand_dims(arr, axis=0)
+
+
+def predict_tflite(interpreter, img_array):
+    in_det = interpreter.get_input_details()
+    out_det = interpreter.get_output_details()
+    interpreter.set_tensor(in_det[0]["index"], img_array)
     interpreter.invoke()
-    preds = interpreter.get_tensor(output_details[0]['index'])[0]
-    return preds
+    return interpreter.get_tensor(out_det[0]["index"])[0]
 
-# ── UI ──
-st.set_page_config(page_title="EcoFriend CNN — Trash Classifier", page_icon="♻️", layout="centered")
 
-st.title("♻️ EcoFriend CNN")
-st.caption("A lightweight, quantized CNN that sorts trash into 6 categories — cardboard, glass, metal, paper, plastic, and trash.")
+st.title("♻️ EcoFriend")
+st.caption("AI-powered smart waste segregation — upload an image to classify it into one of six categories.")
 
-st.divider()
+tab_classify, tab_analytics = st.tabs(["🔍 Classify Waste", "📊 Model Analytics"])
 
-uploaded_file = st.file_uploader("Upload an image of a trash item", type=["jpg", "jpeg", "png"])
+with tab_classify:
+    uploaded_file = st.file_uploader("Upload an image of waste", type=["jpg", "jpeg", "png"])
 
-col1, col2 = st.columns(2)
+    if uploaded_file is not None:
+        image = Image.open(uploaded_file)
+        st.image(image, caption="Uploaded image", use_column_width=True)
 
-if uploaded_file is not None:
-    image = Image.open(uploaded_file)
+        img_array = preprocess_image(image)
 
-    with col1:
-        st.image(image, caption="Uploaded image", use_container_width=True)
+        with st.spinner("Classifying..."):
+            interpreter = load_tflite_interpreter()
+            preds = predict_tflite(interpreter, img_array)
 
-    with st.spinner("Classifying..."):
-        preds = predict(image)
+        top_idx = int(np.argmax(preds))
+        top_class = CLASSES[top_idx]
+        confidence = float(preds[top_idx]) * 100
 
-    pred_idx = int(np.argmax(preds))
-    pred_class = CLASSES[pred_idx]
-    confidence = float(preds[pred_idx]) * 100
-
-    with col2:
-        st.subheader(f"{CLASS_EMOJI[pred_class]} {pred_class.capitalize()}")
+        st.subheader(f"Prediction: **{top_class.capitalize()}**")
         st.metric("Confidence", f"{confidence:.1f}%")
+        st.info(DISPOSAL_GUIDANCE[top_class])
 
-        st.write("**All class probabilities:**")
-        for cls, prob in sorted(zip(CLASSES, preds), key=lambda x: -x[1]):
-            st.progress(float(prob), text=f"{cls.capitalize()}: {prob*100:.1f}%")
+        st.write("Confidence by category:")
+        st.bar_chart({cls: float(p) for cls, p in zip(CLASSES, preds)})
 
-else:
-    st.info("👆 Upload an image to get a prediction.")
+with tab_analytics:
+    st.subheader("Quantized Model Performance")
 
-st.divider()
-st.caption("Model: EcoCNN (VGG-style backbone + SE attention blocks), quantized to INT8 — 730 KB, ~97% test accuracy.")
+    metrics = load_metrics()
+    if metrics:
+        quant = metrics["quantized_model"]
+
+        col1, col2, col3, col4 = st.columns(4)
+        col1.metric("Test accuracy", f"{quant['test_accuracy']*100:.2f}%")
+        col2.metric("File size", f"{quant['file_size_mb']} MB")
+        col3.metric("Avg latency", f"{quant['average_latency_ms']} ms")
+        col4.metric("Parameters", f"{quant['trainable_parameters']:,}")
+    else:
+        st.warning("metrics.json not found — analytics unavailable.")
+
+    st.subheader("Evaluation Dashboard")
+    try:
+        st.image(DASHBOARD_IMAGE_PATH, use_column_width=True)
+    except Exception:
+        st.warning(f"{DASHBOARD_IMAGE_PATH} not found.")
